@@ -1,5 +1,5 @@
 import random
-from py2pddl import Domain, create_type, predicate, action
+from py2pddl import Domain, create_type, predicate, action, goal, init
 
 class LightsOutBoardDomain(Domain):
 
@@ -14,27 +14,33 @@ class LightsOutBoardDomain(Domain):
     def off(self, cell):
         """Represents if a cell is off"""
 
-    """ Estoy liado con esto """
-    # @action(Cell)
-    # def set_on(self, cell):
-    #     preconditions = [self.off(cell)]
-    #     effects = [self.on(cell)]
+    @predicate(Cell)
+    def adjacent(self, cell1, cell2):
+        """Represents if two cells are adjacent"""
 
-    # @action(Cell)
-    # def set_off(self, cell):
-    #     preconditions = [self.on(cell)]
-    #     effects = [self.off(cell)]
+    @action(Cell)
+    def set_on(self, cell):
+        preconditions = [self.off(cell)]
+        effects = [self.on(cell)]
+        return preconditions, effects
 
-    
-    def __init__(self, size=5, randomize=False):
-        self.size = size
+    @action(Cell)
+    def set_off(self, cell):
+        preconditions = [self.on(cell)]
+        effects = [self.off(cell)]
+        return preconditions, effects
+
+class LightsOutBoardProblem(LightsOutBoardDomain):
+
+    def __init__(self, rows=5, colums=5, randomize=False):
+        self.size = (rows, colums)
         if randomize:
-            self.board = [[random.choice([0, 1]) for _ in range(size)] for _ in range(size)]
+            self.board = [[random.choice([0, 1]) for _ in range(colums)] for _ in range(rows)]
         else:
-            self.board = [[0 for _ in range(size)] for _ in range(size)]
+            self.board = [[0 for _ in range(colums)] for _ in range(rows)]
 
     def toggle(self, i, j):
-        if 0 <= i < self.size and 0 <= j < self.size:
+        if 0 <= i < self.size[0] and 0 <= j < self.size[1]:
             self.board[i][j] = 1 - self.board[i][j]
 
     def press(self, i, j):
@@ -52,7 +58,7 @@ class LightsOutBoardDomain(Domain):
 #Test
 if __name__ == "__main__":
     
-    board = LightsOutBoard(size=5, randomize=False)
+    board = LightsOutBoardProblem(colums=7, randomize=False)
     print("Tablero inicial:")
     board.print_board()
 
