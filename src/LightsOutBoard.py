@@ -1,5 +1,5 @@
 import random
-from py2pddl import Domain, create_type, predicate, action, goal, init
+from py2pddl import Domain, create_type, predicate, action, goal, init, Not
 
 class LightsOutBoardDomain(Domain):
 
@@ -21,13 +21,15 @@ class LightsOutBoardDomain(Domain):
     @action(Cell)
     def set_on(self, cell):
         preconditions = [self.off(cell)]
-        effects = [self.on(cell)]
+        effects = [self.on(cell), Not(self.off(cell))]
+        """ Not(self.off(cell)) ensures that the cell is not off after setting it on """
         return preconditions, effects
 
     @action(Cell)
     def set_off(self, cell):
         preconditions = [self.on(cell)]
-        effects = [self.off(cell)]
+        effects = [self.off(cell), Not(self.on(cell))]
+        """ Not(self.on(cell)) ensures that the cell is not on after setting it off """
         return preconditions, effects
 
 class LightsOutBoardProblem(LightsOutBoardDomain):
@@ -42,18 +44,31 @@ class LightsOutBoardProblem(LightsOutBoardDomain):
     def toggle(self, i, j):
         if 0 <= i < self.size[0] and 0 <= j < self.size[1]:
             self.board[i][j] = 1 - self.board[i][j]
+        effects = [self.off(cell), Not(self.on(cell))]
+        return preconditions, effects
 
-    def press(self, i, j):
-        for x, y in [(0, 0), (-1, 0), (1, 0), (0, -1), (0, 1)]:
-            self.toggle(i + x, j + y)
+    # def __init__(self, size=5, randomize=False):
+    #     self.size = size
+    #     if randomize:
+    #         self.board = [[random.choice([0, 1]) for _ in range(size)] for _ in range(size)]
+    #     else:
+    #         self.board = [[0 for _ in range(size)] for _ in range(size)]
 
-    def win(self):
-        return all(cell == 1 for row in self.board for cell in row)
+    # def toggle(self, i, j):
+    #     if 0 <= i < self.size and 0 <= j < self.size:
+    #         self.board[i][j] = 1 - self.board[i][j]
 
-    def print_board(self):
-        for row in self.board:
-            print(" ".join(str(cell) for cell in row))
-        print()
+    # def press(self, i, j):
+    #     for x, y in [(0, 0), (-1, 0), (1, 0), (0, -1), (0, 1)]:
+    #         self.toggle(i + x, j + y)
+
+    # def win(self):
+    #     return all(cell == 1 for row in self.board for cell in row)
+
+    # def print_board(self):
+    #     for row in self.board:
+    #         print(" ".join(str(cell) for cell in row))
+    #     print()
 
 #Test
 if __name__ == "__main__":
