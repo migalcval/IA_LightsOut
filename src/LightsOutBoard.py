@@ -1,6 +1,30 @@
 import random
+from py2pddl import Domain, create_type, predicate, action
 
-class LightsOutBoard:
+class LightsOutBoardDomain(Domain):
+
+    Object = create_type("Object")
+    Cell = create_type("Cell", Object)
+
+    @predicate(Cell)
+    def on(self, cell):
+        """Represents if a cell is on"""
+
+    @predicate(Cell)
+    def off(self, cell):
+        """Represents if a cell is off"""
+
+    """ Estoy liado con esto """
+    # @action(Cell)
+    # def set_on(self, cell):
+    #     preconditions = [self.off(cell)]
+    #     effects = [self.on(cell)]
+
+    # @action(Cell)
+    # def set_off(self, cell):
+    #     preconditions = [self.on(cell)]
+    #     effects = [self.off(cell)]
+
     
     def __init__(self, size=5, randomize=False):
         self.size = size
