@@ -23,6 +23,12 @@ class LightsOutBoardDomain(Domain):
         preconditions = [self.off(cell)]
         effects = [self.on(cell), Not(self.off(cell))]
         """ Not(self.off(cell)) ensures that the cell is not off after setting it on """
+        adjacent_on_effects = [self.on(adj_cell), ~self.off(adj_cell)
+            for adj_cell in self.board if self.adjacent(cell, adj_cell) and self.off(adj_cell)]
+        adjacent_off_effects = [self.off(adj_cell), Not(self.on(adj_cell))
+            for adj_cell in self.board if self.adjacent(cell, adj_cell) and self.on(adj_cell)]
+        effects.extend(adjacent_on_effects)
+        effects.extend(adjacent_off_effects)
         return preconditions, effects
 
     @action(Cell)
@@ -30,32 +36,43 @@ class LightsOutBoardDomain(Domain):
         preconditions = [self.on(cell)]
         effects = [self.off(cell), Not(self.on(cell))]
         """ Not(self.on(cell)) ensures that the cell is not on after setting it off """
+        adjacent_on_effects = [self.on(adj_cell), Not(self.off(adj_cell))
+            for adj_cell in self.board if self.adjacent(cell, adj_cell) and self.off(adj_cell)]
+        adjacent_off_effects = [self.off(adj_cell), Not(self.on(adj_cell))
+            for adj_cell in self.board if self.adjacent(cell, adj_cell) and self.on(adj_cell)]
+        effects.extend(adjacent_on_effects)
+        effects.extend(adjacent_off_effects)
         return preconditions, effects
 
 class LightsOutBoardProblem(LightsOutBoardDomain):
 
     def __init__(self, rows=5, colums=5, randomize=False):
         self.size = (rows, colums)
-        if randomize:
-            self.board = [[random.choice([0, 1]) for _ in range(colums)] for _ in range(rows)]
-        else:
-            self.board = [[0 for _ in range(colums)] for _ in range(rows)]
+        self.randomize = randomize
+        self.board = LightsOutBoardDomain.Cell.create_objects([
+            (f"c{i}-{j}", LightsOutBoardDomain.Cell) for i in range(rows) for j in range(colums)
+        ])
+    
+    @init
+    def init(self):
+        for cell in self.board:
+            if self.randomize:
+                self.board[cell] = random.choice([0, 1])
+            else:
+                self.board[cell] = 0
+        return [self.off(self.board[cell]) for cell in self.board if self.board[cell] == 0,
+                self.on(self.board[cell]) for cell in self.board if self.board[cell] == 1,
+                self.adjacent(self.board[f"c{i}-{j}"], self.board[f"c{i + 1}-{j}"]) for i in range(self.size[0]-1) for j in range(self.size[1]),
+                self.adjacent(self.board[f"c{i}-{j}"], self.board[f"c{i}-{j + 1}"]) for i in range(self.size[0]) for j in range(self.size[1]-1),
+                self.adjacent(self.board[f"c{i}-{j}"], self.board[f"c{i - 1}-{j}"]) for i in range(1, self.size[0]) for j in range(self.size[1]),
+                self.adjacent(self.board[f"c{i}-{j}"], self.board[f"c{i}-{j - 1}"]) for i in range(self.size[0]) for j in range(1, self.size[1])]
 
-    def toggle(self, i, j):
-        if 0 <= i < self.size[0] and 0 <= j < self.size[1]:
-            self.board[i][j] = 1 - self.board[i][j]
-        effects = [self.off(cell), Not(self.on(cell))]
-        return preconditions, effects
-
-    # def __init__(self, size=5, randomize=False):
-    #     self.size = size
-    #     if randomize:
-    #         self.board = [[random.choice([0, 1]) for _ in range(size)] for _ in range(size)]
-    #     else:
-    #         self.board = [[0 for _ in range(size)] for _ in range(size)]
+    @goal
+    def goal(self):
+        return [self.on(self.board[cell]) for cell in self.board]
 
     # def toggle(self, i, j):
-    #     if 0 <= i < self.size and 0 <= j < self.size:
+    #     if 0 <= i < self.size[0] and 0 <= j < self.size[1]:
     #         self.board[i][j] = 1 - self.board[i][j]
 
     # def press(self, i, j):
@@ -70,16 +87,18 @@ class LightsOutBoardProblem(LightsOutBoardDomain):
     #         print(" ".join(str(cell) for cell in row))
     #     print()
 
-#Test
+"""Test"""
 if __name__ == "__main__":
+
+    !pyperplan -H hmax -s astar dominio_mundo_bloques.pddl problema_mundo_bloques.pddl
     
-    board = LightsOutBoardProblem(colums=7, randomize=False)
-    print("Tablero inicial:")
-    board.print_board()
+#     board = LightsOutBoardProblem(colums=7, randomize=False)
+#     print("Tablero inicial:")
+#     board.print_board()
 
-    board.press(2, 2)
-    board.print_board()
-    board.press(2, 4)
-    board.print_board()
+#     board.press(2, 2)
+#     board.print_board()
+#     board.press(2, 4)
+#     board.print_board()
 
-    print("¿Tablero resuelto?:", board.win())
+#     print("¿Tablero resuelto?:", board.win())
