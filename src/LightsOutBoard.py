@@ -1,5 +1,5 @@
 import random
-from py2pddl import Domain, create_type, predicate, action, goal, init
+from py2pddl import Domain, create_type, predicate, action, goal, init, DomainWriter, ProblemWriter
 
 class LightsOutBoardDomain(Domain):
 
@@ -74,6 +74,10 @@ class LightsOutBoardProblem(LightsOutBoardDomain):
 """Test"""
 if __name__ == "__main__":
     
-    # To run the planner, execute the following command in your terminal:
+    # Execute the following command in your terminal:
     # pyperplan -H hmax -s astar dominio_mundo_bloques.pddl problema_mundo_bloques.pddl
-    pass
+    domain = LightsOutBoardDomain()
+    problem = LightsOutBoardProblem(rows=5, colums=5, randomize=True)
+
+    DomainWriter(domain).write('dominio_mundo_bloques.pddl')
+    ProblemWriter(problem).write('problema_mundo_bloques.pddl')
