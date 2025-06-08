@@ -1,8 +1,5 @@
 import random
-
-from py2pddl import (Domain, action,  # , DomainWriter, ProblemWriter
-                     create_type, goal, init, predicate)
-
+from py2pddl import Domain, action, create_type, goal, init, predicate # , DomainWriter, ProblemWriter 
 
 class LightsOutBoardDomain(Domain):
 
@@ -82,6 +79,5 @@ if __name__ == "__main__":
     domain = LightsOutBoardDomain()
     problem = LightsOutBoardProblem(rows=5, colums=5, randomize=True)
 
-    domain.generate_domain_pddl('dominio_lightsout.pddl')
-    
-    problem.generate_domain_pddl('problema_lightsout.pddl')
+    domain.generate_domain_pddl(filename="dominio_lightsout.pddl")
+    problem.generate_domain_pddl(filename="problema_lightsout.pddl")
