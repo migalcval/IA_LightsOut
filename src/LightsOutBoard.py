@@ -1,5 +1,8 @@
 import random
-from py2pddl import Domain, create_type, predicate, action, goal, init, DomainWriter, ProblemWriter
+
+from py2pddl import (Domain, action,  # , DomainWriter, ProblemWriter
+                     create_type, goal, init, predicate)
+
 
 class LightsOutBoardDomain(Domain):
 
@@ -47,7 +50,7 @@ class LightsOutBoardProblem(LightsOutBoardDomain):
     def __init__(self, rows=5, colums=5, randomize=False):
         self.size = (rows, colums)
         self.randomize = randomize
-        self.board = LightsOutBoardDomain.Cell.create_objects([
+        self.board = LightsOutBoardDomain.Cell.create_objs([
             (f"c{i}-{j}", LightsOutBoardDomain.Cell) for i in range(rows) for j in range(colums)
         ])
     
@@ -75,9 +78,10 @@ class LightsOutBoardProblem(LightsOutBoardDomain):
 if __name__ == "__main__":
     
     # Execute the following command in your terminal:
-    # pyperplan -H hmax -s astar dominio_mundo_bloques.pddl problema_mundo_bloques.pddl
+    # pyperplan -H hmax -s astar dominio_lightsout.pddl problema_lightsout.pddl
     domain = LightsOutBoardDomain()
     problem = LightsOutBoardProblem(rows=5, colums=5, randomize=True)
 
-    DomainWriter(domain).write('dominio_mundo_bloques.pddl')
-    ProblemWriter(problem).write('problema_mundo_bloques.pddl')
+    domain.generate_domain_pddl('dominio_lightsout.pddl')
+    
+    problem.generate_domain_pddl('problema_lightsout.pddl')
