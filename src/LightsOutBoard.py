@@ -1,10 +1,25 @@
 import random
-from py2pddl import Domain, action, create_type, goal, init, predicate # , DomainWriter, ProblemWriter 
+
+from py2pddl import (Domain, action,  # , DomainWriter, ProblemWriter
+                     create_type, goal, init, predicate)
+
 
 class LightsOutBoardDomain(Domain):
 
     Object = create_type("Object")
     Cell = create_type("Cell", Object)
+    Board = create_type("Board", Object)
+
+    def get_cell_number(self, cell):
+        row = None
+        column = None
+        for name, value in globals().items():
+            if value is cell:
+                cell_position = name.replace("c", "").split("-")
+                row = int(cell_position[0])
+                column = int(cell_position[1])
+                break
+        return row, column
 
     @predicate(Cell)
     def on(self, cell):
@@ -23,8 +38,8 @@ class LightsOutBoardDomain(Domain):
         preconditions = [self.off(cell)]
         effects = [self.on(cell), ~self.off(cell)] #~self.off(cell)) ensures that the cell is not off after setting it on
 
-        adjacent_on_effects = [effect for adj_cell in self.board if (self.adjacent(cell, adj_cell) and self.off(adj_cell)) for effect in (self.on(adj_cell), ~self.off(adj_cell))]
-        adjacent_off_effects = [effect for adj_cell in self.board if (self.adjacent(cell, adj_cell) and self.on(adj_cell)) for effect in (self.off(adj_cell), ~self.on(adj_cell))]
+        adjacent_on_effects = [effect for adj_cell in self.Board if (self.adjacent(cell, adj_cell) and self.off(adj_cell)) for effect in (self.on(adj_cell), ~self.off(adj_cell))]
+        adjacent_off_effects = [effect for adj_cell in self.Board if (self.adjacent(cell, adj_cell) and self.on(adj_cell)) for effect in (self.off(adj_cell), ~self.on(adj_cell))]
 
         effects.extend(adjacent_on_effects)
         effects.extend(adjacent_off_effects)
@@ -32,11 +47,13 @@ class LightsOutBoardDomain(Domain):
 
     @action(Cell)
     def set_off(self, cell):
+        row, column = self.get_cell_number(cell)
+        print(row, " ", column)
         preconditions = [self.on(cell)]
         effects = [self.off(cell), ~self.on(cell)] # ~self.on(cell)) ensures that the cell is not on after setting it off
-        
-        adjacent_on_effects = [effect for adj_cell in self.board if self.adjacent(cell, adj_cell) and self.off(adj_cell) for effect in (self.on(adj_cell), ~self.off(adj_cell))]
-        adjacent_off_effects = [effect for adj_cell in self.board if self.adjacent(cell, adj_cell) and self.on(adj_cell) for effect in (self.off(adj_cell), ~self.on(adj_cell))]
+
+        adjacent_on_effects = [effect for adj_cell in self.Board if self.adjacent(cell, adj_cell) and self.off(adj_cell) for effect in (self.on(adj_cell), ~self.off(adj_cell))]
+        adjacent_off_effects = [effect for adj_cell in self.Board if self.adjacent(cell, adj_cell) and self.on(adj_cell) for effect in (self.off(adj_cell), ~self.on(adj_cell))]
 
         effects.extend(adjacent_on_effects)
         effects.extend(adjacent_off_effects)
