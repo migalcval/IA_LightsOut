@@ -1,25 +1,10 @@
 import random
-
-from py2pddl import (Domain, action,  # , DomainWriter, ProblemWriter
-                     create_type, goal, init, predicate)
-
+from py2pddl import Domain, action, create_type, goal, init, predicate
 
 class LightsOutBoardDomain(Domain):
 
     Object = create_type("Object")
     Cell = create_type("Cell", Object)
-    Board = create_type("Board", Object)
-
-    def get_cell_number(self, cell):
-        row = None
-        column = None
-        for name, value in globals().items():
-            if value is cell:
-                cell_position = name.replace("c", "").split("-")
-                row = int(cell_position[0])
-                column = int(cell_position[1])
-                break
-        return row, column
 
     @predicate(Cell)
     def on(self, cell):
@@ -33,68 +18,85 @@ class LightsOutBoardDomain(Domain):
     def adjacent(self, cell1, cell2):
         """Represents if two cells are adjacent"""
 
-    @action(Cell)
-    def set_on(self, cell):
-        preconditions = [self.off(cell)]
-        effects = [self.on(cell), ~self.off(cell)] #~self.off(cell)) ensures that the cell is not off after setting it on
-
-        adjacent_on_effects = [effect for adj_cell in self.Board if (self.adjacent(cell, adj_cell) and self.off(adj_cell)) for effect in (self.on(adj_cell), ~self.off(adj_cell))]
-        adjacent_off_effects = [effect for adj_cell in self.Board if (self.adjacent(cell, adj_cell) and self.on(adj_cell)) for effect in (self.off(adj_cell), ~self.on(adj_cell))]
-
-        effects.extend(adjacent_on_effects)
-        effects.extend(adjacent_off_effects)
-        return preconditions, effects
-
-    @action(Cell)
-    def set_off(self, cell):
-        row, column = self.get_cell_number(cell)
-        print(row, " ", column)
-        preconditions = [self.on(cell)]
-        effects = [self.off(cell), ~self.on(cell)] # ~self.on(cell)) ensures that the cell is not on after setting it off
-
-        adjacent_on_effects = [effect for adj_cell in self.Board if self.adjacent(cell, adj_cell) and self.off(adj_cell) for effect in (self.on(adj_cell), ~self.off(adj_cell))]
-        adjacent_off_effects = [effect for adj_cell in self.Board if self.adjacent(cell, adj_cell) and self.on(adj_cell) for effect in (self.off(adj_cell), ~self.on(adj_cell))]
-
-        effects.extend(adjacent_on_effects)
-        effects.extend(adjacent_off_effects)
-        return preconditions, effects
-
 class LightsOutBoardProblem(LightsOutBoardDomain):
 
-    def __init__(self, rows=5, colums=5, randomize=False):
-        self.size = (rows, colums)
+    #------------------------ Initialize the board with a given size or a random state ------------------------#
+    def __init__(self, rows=5, columns=5, randomize=False):
+        self.size = (rows, columns)
         self.randomize = randomize
-        self.board = LightsOutBoardDomain.Cell.create_objs([
-            (f"c{i}-{j}", LightsOutBoardDomain.Cell) for i in range(rows) for j in range(colums)
-        ])
+        self.cells = [self.Cell(f"c{i}-{j}") for i in range(rows) for j in range(columns)]
+        self.cell_map = {f"c{i}-{j}": cell for i in range(rows) for j in range(columns) 
+                        for cell in self.cells if str(cell) == f"c{i}-{j}"}
+
+    #------------------------ Define the action to turn on a cell ------------------------#
+    @action(LightsOutBoardDomain.Cell)
+    def set_on(self, cell):
+        preconditions = [self.off(cell)]
+        effects = [self.on(cell), ~self.off(cell)]
+        
+        for adj_cell in self.cells:
+            if self.adjacent(cell, adj_cell) in self.init():
+                if self.off(adj_cell) in self.init():
+                    effects.extend([self.on(adj_cell), ~self.off(adj_cell)])
+                elif self.on(adj_cell) in self.init():
+                    effects.extend([self.off(adj_cell), ~self.on(adj_cell)])
+        return preconditions, effects
+
+    #------------------------ Define the action to turn off a cell ------------------------#
+    @action(LightsOutBoardDomain.Cell)
+    def set_off(self, cell):
+        preconditions = [self.on(cell)]
+        effects = [self.off(cell), ~self.on(cell)]
+        
+        for adj_cell in self.cells:
+            if self.adjacent(cell, adj_cell) in self.init():
+                if self.off(adj_cell) in self.init():
+                    effects.extend([self.on(adj_cell), ~self.off(adj_cell)])
+                elif self.on(adj_cell) in self.init():
+                    effects.extend([self.off(adj_cell), ~self.on(adj_cell)])
+        return preconditions, effects
     
+    #----------------------- Define the initial state ------------------------#
     @init
     def init(self):
-        for cell in self.board:
-            if self.randomize:
-                self.board[cell] = random.choice([0, 1])
-            else:
-                self.board[cell] = 0
-        return (
-            [self.off(self.board[cell]) for cell in self.board if self.board[cell] == 0] +
-            [self.on(self.board[cell]) for cell in self.board if self.board[cell] == 1] +
-            [self.adjacent(self.board[f"c{i}-{j}"], self.board[f"c{i + 1}-{j}"]) for i in range(self.size[0]-1) for j in range(self.size[1])] +
-            [self.adjacent(self.board[f"c{i}-{j}"], self.board[f"c{i}-{j + 1}"]) for i in range(self.size[0]) for j in range(self.size[1]-1)] +
-            [self.adjacent(self.board[f"c{i}-{j}"], self.board[f"c{i - 1}-{j}"]) for i in range(1, self.size[0]) for j in range(self.size[1])] +
-            [self.adjacent(self.board[f"c{i}-{j}"], self.board[f"c{i}-{j - 1}"]) for i in range(self.size[0]) for j in range(1, self.size[1])]
-        )
+        initial_state = []
+        rows, cols = self.size
+        
+        # Add adjacency relationships
+        for i in range(rows):
+            for j in range(cols):
+                current = self.cell_map[f"c{i}-{j}"]
+                if i > 0:
+                    initial_state.append(self.adjacent(current, self.cell_map[f"c{i-1}-{j}"]))
+                if i < rows-1:
+                    initial_state.append(self.adjacent(current, self.cell_map[f"c{i+1}-{j}"]))
+                if j > 0:
+                    initial_state.append(self.adjacent(current, self.cell_map[f"c{i}-{j-1}"]))
+                if j < cols-1:
+                    initial_state.append(self.adjacent(current, self.cell_map[f"c{i}-{j+1}"]))
+                
+                # Initial cell states
+                if self.randomize:
+                    initial_state.append(
+                        self.on(current) if random.choice([True, False]) 
+                        else self.off(current)
+                    )
+                else:
+                    initial_state.append(self.off(current))
+        
+        return initial_state
 
+    #------------------------ Define the goal state ------------------------#
     @goal
     def goal(self):
-        return [self.on(self.board[cell]) for cell in self.board]
+        return [self.on(cell) for cell in self.cells]
 
-"""Test"""
+#------------------------ Generate PDDL files ------------------------#
 if __name__ == "__main__":
-    
-    # Execute the following command in your terminal:
-    # pyperplan -H hmax -s astar dominio_lightsout.pddl problema_lightsout.pddl
     domain = LightsOutBoardDomain()
-    problem = LightsOutBoardProblem(rows=5, colums=5, randomize=True)
+    problem = LightsOutBoardProblem(rows=3, columns=3, randomize=True)
+    
+    domain.generate_domain_pddl(filename="dominio_lightsout")
+    problem.generate_problem_pddl(filename="problema_lightsout")
 
-    domain.generate_domain_pddl(filename="dominio_lightsout.pddl")
-    problem.generate_domain_pddl(filename="problema_lightsout.pddl")
+    #pyperplan -H hmax -s astar dominio_lightsout.pddl problema_lightsout.pddl
