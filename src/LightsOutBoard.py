@@ -61,30 +61,31 @@ class LightsOutBoardProblem(LightsOutBoardDomain):
     def init(self):
         initial_state = []
         rows, cols = self.size
-        
-        # Add adjacency relationships
+
         for i in range(rows):
             for j in range(cols):
                 current = self.cell_map[f"c{i}-{j}"]
-                if i > 0:
-                    initial_state.append(self.adjacent(current, self.cell_map[f"c{i-1}-{j}"]))
-                if i < rows-1:
-                    initial_state.append(self.adjacent(current, self.cell_map[f"c{i+1}-{j}"]))
-                if j > 0:
-                    initial_state.append(self.adjacent(current, self.cell_map[f"c{i}-{j-1}"]))
-                if j < cols-1:
-                    initial_state.append(self.adjacent(current, self.cell_map[f"c{i}-{j+1}"]))
-                
-                # Initial cell states
-                if self.randomize:
-                    initial_state.append(
-                        self.on(current) if random.choice([True, False]) 
-                        else self.off(current)
-                    )
-                else:
-                    initial_state.append(self.off(current))
-        
+                initial_state.extend(self._get_adjacencies(i, j, current, rows, cols))
+                initial_state.append(self._get_initial_cell_state(current))
         return initial_state
+
+    def _get_adjacencies(self, i, j, current, rows, cols):
+        adjacencies = []
+        if i > 0:
+            adjacencies.append(self.adjacent(current, self.cell_map[f"c{i-1}-{j}"]))
+        if i < rows-1:
+            adjacencies.append(self.adjacent(current, self.cell_map[f"c{i+1}-{j}"]))
+        if j > 0:
+            adjacencies.append(self.adjacent(current, self.cell_map[f"c{i}-{j-1}"]))
+        if j < cols-1:
+            adjacencies.append(self.adjacent(current, self.cell_map[f"c{i}-{j+1}"]))
+        return adjacencies
+
+    def _get_initial_cell_state(self, current):
+        if self.randomize:
+            return self.on(current) if random.choice([True, False]) else self.off(current)
+        else:
+            return self.off(current)
 
     #------------------------ Define the goal state ------------------------#
     @goal
