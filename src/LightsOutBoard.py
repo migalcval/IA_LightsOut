@@ -69,16 +69,16 @@ class LightsOutBoardProblem(LightsOutBoardDomain):
                 initial_state.append(self._get_initial_cell_state(current))
         return initial_state
 
-    def _get_adjacencies(self, i, j, current, rows, cols):
+    def _get_adjacencies(self, row, column, current, rows, cols):
         adjacencies = []
-        if i > 0:
-            adjacencies.append(self.adjacent(current, self.cell_map[f"c{i-1}-{j}"]))
-        if i < rows-1:
-            adjacencies.append(self.adjacent(current, self.cell_map[f"c{i+1}-{j}"]))
-        if j > 0:
-            adjacencies.append(self.adjacent(current, self.cell_map[f"c{i}-{j-1}"]))
-        if j < cols-1:
-            adjacencies.append(self.adjacent(current, self.cell_map[f"c{i}-{j+1}"]))
+        if row > 0:
+            adjacencies.append(self.adjacent(current, self.cell_map[f"c{row-1}-{column}"]))
+        if row < rows-1:
+            adjacencies.append(self.adjacent(current, self.cell_map[f"c{row+1}-{column}"]))
+        if column > 0:
+            adjacencies.append(self.adjacent(current, self.cell_map[f"c{row}-{column-1}"]))
+        if column < cols-1:
+            adjacencies.append(self.adjacent(current, self.cell_map[f"c{row}-{column+1}"]))
         return adjacencies
 
     def _get_initial_cell_state(self, current):
