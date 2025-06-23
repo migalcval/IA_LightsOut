@@ -18,18 +18,8 @@ class LightsOutBoardDomain(Domain):
     def adjacent(self, cell1, cell2):
         """Represents if two cells are adjacent"""
 
-class LightsOutBoardProblem(LightsOutBoardDomain):
-
-    #------------------------ Initialize the board with a given size or a random state ------------------------#
-    def __init__(self, rows=5, columns=5, randomize=False):
-        self.size = (rows, columns)
-        self.randomize = randomize
-        self.cells = [self.Cell(f"c{i}-{j}") for i in range(rows) for j in range(columns)]
-        self.cell_map = {f"c{i}-{j}": cell for i in range(rows) for j in range(columns) 
-                        for cell in self.cells if str(cell) == f"c{i}-{j}"}
-
     #------------------------ Define the action to turn on a cell ------------------------#
-    @action(LightsOutBoardDomain.Cell)
+    @action(Cell)
     def set_on(self, cell):
         preconditions = [self.off(cell)]
         effects = [self.on(cell), ~self.off(cell)]
@@ -43,7 +33,7 @@ class LightsOutBoardProblem(LightsOutBoardDomain):
         return preconditions, effects
 
     #------------------------ Define the action to turn off a cell ------------------------#
-    @action(LightsOutBoardDomain.Cell)
+    @action(Cell)
     def set_off(self, cell):
         preconditions = [self.on(cell)]
         effects = [self.off(cell), ~self.on(cell)]
@@ -55,6 +45,16 @@ class LightsOutBoardProblem(LightsOutBoardDomain):
                 elif self.on(adj_cell) in self.init():
                     effects.extend([self.off(adj_cell), ~self.on(adj_cell)])
         return preconditions, effects
+
+class LightsOutBoardProblem(LightsOutBoardDomain):
+
+    #------------------------ Initialize the board with a given size or a random state ------------------------#
+    def __init__(self, rows=5, columns=5, randomize=False):
+        self.size = (rows, columns)
+        self.randomize = randomize
+        self.cells = [self.Cell(f"c{i}-{j}") for i in range(rows) for j in range(columns)]
+        self.cell_map = {f"c{i}-{j}": cell for i in range(rows) for j in range(columns) 
+                        for cell in self.cells if str(cell) == f"c{i}-{j}"}
     
     #----------------------- Define the initial state ------------------------#
     @init
