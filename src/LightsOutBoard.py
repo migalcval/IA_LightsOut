@@ -1,103 +1,57 @@
 import random
-from py2pddl import Domain, action, create_type, goal, init, predicate
 
-class LightsOutBoardDomain(Domain):
+from unified_planning.model import Fluent, Object
+from unified_planning.shortcuts import (BoolType, InstantaneousAction, Problem,
+                                        UserType)
 
-    Object = create_type("Object")
-    Cell = create_type("Cell", Object)
+# Types and Objects
+Cell = UserType("Cell")
+Board = dict((f"c{i}-{j}", Object(f"c{i}-{j}", Cell)) for i in range(5) for j in range(5))  # 5x5 grid of cells
 
-    @predicate(Cell)
-    def on(self, cell):
-        """Represents if a cell is on"""
+# Predicates
+cell_on = Fluent("cell_on", BoolType(), c=Cell)
+cell_off = Fluent("cell_off", BoolType(), c=Cell)
+cell_adjacent = Fluent("cell_adjacent", BoolType(), c1=Cell, c2=Cell)
 
-    @predicate(Cell)
-    def off(self, cell):
-        """Represents if a cell is off"""
+# Problem
+problem = Problem("LightsOutBoard")
+problem.add_fluent(cell_on)
+problem.add_fluent(cell_off)
+problem.add_fluent(cell_adjacent)
+for cell in Board:
+    if random.choice([True, False]):
+        problem.set_initial_value(cell_on(Board[cell]), True)
+        problem.set_initial_value(cell_off(Board[cell]), False)
+    else:
+        problem.set_initial_value(cell_on(Board[cell]), False)
+        problem.set_initial_value(cell_off(Board[cell]), True)
+for i in range(5):
+    for j in range(5):
+        if i > 0:
+            problem.set_initial_value(cell_adjacent(Board[f"c{i-1}-{j}"], Board[f"c{i}-{j}"]), True)
+        if j > 0:
+            problem.set_initial_value(cell_adjacent(Board[f"c{i}-{j-1}"], Board[f"c{i}-{j}"]), True)
 
-    @predicate(Cell)
-    def adjacent(self, cell1, cell2):
-        """Represents if two cells are adjacent"""
-
-    #------------------------ Define the action to turn on a cell ------------------------#
-    @action(Cell)
-    def set_on(self, cell):
-        preconditions = [self.off(cell)]
-        effects = [self.on(cell), ~self.off(cell)]
-        
-        for adj_cell in self.cells:
-            if self.adjacent(cell, adj_cell) in self.init():
-                if self.off(adj_cell) in self.init():
-                    effects.extend([self.on(adj_cell), ~self.off(adj_cell)])
-                elif self.on(adj_cell) in self.init():
-                    effects.extend([self.off(adj_cell), ~self.on(adj_cell)])
-        return preconditions, effects
-
-    #------------------------ Define the action to turn off a cell ------------------------#
-    @action(Cell)
-    def set_off(self, cell):
-        preconditions = [self.on(cell)]
-        effects = [self.off(cell), ~self.on(cell)]
-        
-        for adj_cell in self.cells:
-            if self.adjacent(cell, adj_cell) in self.init():
-                if self.off(adj_cell) in self.init():
-                    effects.extend([self.on(adj_cell), ~self.off(adj_cell)])
-                elif self.on(adj_cell) in self.init():
-                    effects.extend([self.off(adj_cell), ~self.on(adj_cell)])
-        return preconditions, effects
-
-class LightsOutBoardProblem(LightsOutBoardDomain):
-
-    #------------------------ Initialize the board with a given size or a random state ------------------------#
-    def __init__(self, rows=5, columns=5, randomize=False):
-        self.size = (rows, columns)
-        self.randomize = randomize
-        self.cells = [self.Cell(f"c{i}-{j}") for i in range(rows) for j in range(columns)]
-        self.cell_map = {f"c{i}-{j}": cell for i in range(rows) for j in range(columns) 
-                        for cell in self.cells if str(cell) == f"c{i}-{j}"}
-    
-    #----------------------- Define the initial state ------------------------#
-    @init
-    def init(self):
-        initial_state = []
-        rows, cols = self.size
-
-        for i in range(rows):
-            for j in range(cols):
-                current = self.cell_map[f"c{i}-{j}"]
-                initial_state.extend(self._get_adjacencies(i, j, current, rows, cols))
-                initial_state.append(self._get_initial_cell_state(current))
-        return initial_state
-
-    def _get_adjacencies(self, row, column, current, rows, cols):
-        adjacencies = []
-        if row > 0:
-            adjacencies.append(self.adjacent(current, self.cell_map[f"c{row-1}-{column}"]))
-        if row < rows-1:
-            adjacencies.append(self.adjacent(current, self.cell_map[f"c{row+1}-{column}"]))
-        if column > 0:
-            adjacencies.append(self.adjacent(current, self.cell_map[f"c{row}-{column-1}"]))
-        if column < cols-1:
-            adjacencies.append(self.adjacent(current, self.cell_map[f"c{row}-{column+1}"]))
-        return adjacencies
-
-    def _get_initial_cell_state(self, current):
-        if self.randomize:
-            return self.on(current) if random.choice([True, False]) else self.off(current)
-        else:
-            return self.off(current)
-
-    #------------------------ Define the goal state ------------------------#
-    @goal
-    def goal(self):
-        return [self.on(cell) for cell in self.cells]
+# Actions
+# set_on = InstantaneousAction("set_on", c=Cell)
+# c = set_on.parameter("c")
+# set_on.add_precondition(cell_off(c))
+# set_on.add_effect(cell_on(c), True)
+# set_on.add_effect(cell_off(c), False)
+# for cell in Board:
+#     counter = 0
+#     if cell_adjacent(c, cell):
+#         counter += 1
+#         if cell_on(cell):
+#             set_on.add_effect(cell_off(cell), True)
+#             set_on.add_effect(cell_on(cell), False)
+#         elif cell_off(cell):
+#             set_on.add_effect(cell_on(cell), True)
+#             set_on.add_effect(cell_off(cell), False)
+#     if counter >= 4:
+#         break
 
 #------------------------ Generate PDDL files ------------------------#
 if __name__ == "__main__":
-    domain = LightsOutBoardDomain()
-    problem = LightsOutBoardProblem(rows=3, columns=3, randomize=True)
-    
-    domain.generate_domain_pddl(filename="dominio_lightsout")
-    problem.generate_problem_pddl(filename="problema_lightsout")
-
-    #pyperplan -H hmax -s astar dominio_lightsout.pddl problema_lightsout.pddl
+    print(problem)
+    print(set_on)
