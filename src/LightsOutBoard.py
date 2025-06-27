@@ -40,13 +40,12 @@ for i in range(5):
 
 press_cell = InstantaneousAction("press_cell", c=Cell)
 c = press_cell.parameter("c")
-
-press_cell.add_precondition(cell_on(c) == True)
-press_cell.add_precondition(cell_off(c) == False)
+press_cell.add_effect(fluent=cell_on(c), value=Not(cell_on(c)))
+press_cell.add_effect(fluent=cell_off(c), value=Not(cell_off(c)))
 
 for cell in Board.values():
-    press_cell.add_conditional_effects(cell_adjacent(c, cell), cell_on(cell), Not(cell_on(cell)))
-    press_cell.add_conditional_effects(cell_adjacent(c, cell), cell_off(cell), Not(cell_off(cell)))
+    press_cell.add_effect(condition=cell_adjacent(c, cell), fluent=cell_on(cell), value=Not(cell_on(cell)))
+    press_cell.add_effect(condition=cell_adjacent(c, cell), fluent=cell_off(cell), value=Not(cell_off(cell)))
 
 problem.add_action(press_cell)
 
@@ -54,8 +53,7 @@ problem.add_action(press_cell)
 
 goal = []
 for cell in Board.values():
-    goal.append(cell_on(cell) == True)
-problem.add_goal(And(*goal))
+    problem.add_goal(cell_on(cell))
 
 #------------------------ Generate PDDL files ------------------------#
 
