@@ -1,8 +1,7 @@
 import random
 
 from unified_planning.model import Fluent, Object, InstantaneousAction
-from unified_planning.shortcuts import (BoolType, Problem, Not, UserType,
-                                        And)
+from unified_planning.shortcuts import BoolType, Problem, Not, UserType
 from unified_planning.io import PDDLWriter
 
 Cell = UserType("Cell")
@@ -21,13 +20,14 @@ problem.add_fluent(cell_on)
 problem.add_fluent(cell_off)
 problem.add_fluent(cell_adjacent)
 
-for cell in Board:
+for cell in Board.values():
+    problem.add_object(cell)
     if random.choice([True, False]):
-        problem.set_initial_value(cell_on(Board[cell]), True)
-        problem.set_initial_value(cell_off(Board[cell]), False)
+        problem.set_initial_value(cell_on(cell), True)
+        problem.set_initial_value(cell_off(cell), False)
     else:
-        problem.set_initial_value(cell_on(Board[cell]), False)
-        problem.set_initial_value(cell_off(Board[cell]), True)
+        problem.set_initial_value(cell_on(cell), False)
+        problem.set_initial_value(cell_off(cell), True)
 
 for i in range(5):
     for j in range(5):
@@ -60,7 +60,6 @@ for cell in Board.values():
 if __name__ == "__main__":
 
     print(problem)
-    writer = PDDLWriter(problem)
-    writer.write_domain("dominio_mundo_bloques.pddl")
-    writer.write_problem("problema_mundo_bloques.pddl")
-
+    writer = PDDLWriter(problem, rewrite_bool_assignments=True)
+    writer.write_domain("src/pddl/lightsout_domain.pddl")
+    writer.write_problem("src/pddl/lightsout_problem.pddl")
