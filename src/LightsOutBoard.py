@@ -1,8 +1,9 @@
 import random
-
 from unified_planning.model import Fluent, Object, InstantaneousAction
-from unified_planning.shortcuts import BoolType, Problem, Not, UserType
+from unified_planning.shortcuts import BoolType, Problem, Not, UserType, And
 from unified_planning.io import PDDLWriter
+
+random.seed(33)  # For reproducibility
 
 Cell = UserType("Cell")
 Board = dict((f"c{i}-{j}", Object(f"c{i}-{j}", Cell)) for i in range(5) for j in range(5))  # 5x5 grid of cells
@@ -63,3 +64,5 @@ if __name__ == "__main__":
     writer = PDDLWriter(problem, rewrite_bool_assignments=True)
     writer.write_domain("src/pddl/lightsout_domain.pddl")
     writer.write_problem("src/pddl/lightsout_problem.pddl")
+
+#pyperplan -H hmax -s astar src/pddl/lightsout_domain.pddl src/pddl/lightsout_problem.pddl
