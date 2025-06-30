@@ -41,6 +41,7 @@ for i in range(5):
 
 press_cell = InstantaneousAction("press_cell", c=Cell)
 c = press_cell.parameter("c")
+press_cell.add_precondition(cell_adjacent(Board["c0-0"], Board["c0-1"])) # Always true, just to ensure the action has a precondition
 press_cell.add_effect(fluent=cell_on(c), value=Not(cell_on(c)))
 press_cell.add_effect(fluent=cell_off(c), value=Not(cell_off(c)))
 
