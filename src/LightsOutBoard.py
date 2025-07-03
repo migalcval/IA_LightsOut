@@ -18,17 +18,11 @@ cell_adjacent = Fluent("cell_adjacent", BoolType(), c1=Cell, c2=Cell)
 
 problem = Problem("LightsOutBoard")
 problem.add_fluent(cell_on)
-problem.add_fluent(cell_off)
 problem.add_fluent(cell_adjacent)
 
 for cell in Board.values():
     problem.add_object(cell)
-    if random.choice([True, False]):
-        problem.set_initial_value(cell_on(cell), True)
-        problem.set_initial_value(cell_off(cell), False)
-    else:
-        problem.set_initial_value(cell_on(cell), False)
-        problem.set_initial_value(cell_off(cell), True)
+    problem.set_initial_value(cell_on(cell), random.choice([True, False]))
 
 for i in range(5):
     for j in range(5):
@@ -43,11 +37,9 @@ press_cell = InstantaneousAction("press_cell", c=Cell)
 c = press_cell.parameter("c")
 press_cell.add_precondition(cell_adjacent(Board["c0-0"], Board["c0-1"])) # Always true, just to ensure the action has a precondition
 press_cell.add_effect(fluent=cell_on(c), value=Not(cell_on(c)))
-press_cell.add_effect(fluent=cell_off(c), value=Not(cell_off(c)))
 
 for cell in Board.values():
     press_cell.add_effect(condition=cell_adjacent(c, cell), fluent=cell_on(cell), value=Not(cell_on(cell)))
-    press_cell.add_effect(condition=cell_adjacent(c, cell), fluent=cell_off(cell), value=Not(cell_off(cell)))
 
 problem.add_action(press_cell)
 
