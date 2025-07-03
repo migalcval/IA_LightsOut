@@ -1,9 +1,10 @@
 from collections import namedtuple
 
 Constant = namedtuple("Constant", ["name", "type"])
-UnaryPredicate = namedtuple("UnaryPredicate", ["name", "parameter"])
-BinaryPredicate = namedtuple("BinaryPredicate", ["name", "parameter1", "parameter2"])
+UnaryPredicate = namedtuple("UnaryPredicate", ["name", "parameter", "positive"])
+BinaryPredicate = namedtuple("BinaryPredicate", ["name", "parameter1", "parameter2", "positive"])
 Action = namedtuple("Action", ["name", "parameters", "preconditions", "effects"])
+Effect = namedtuple("Effect", ["conditions", "effects"])
 
 def parse_domain(file_path):
     with open(file_path) as file:
@@ -60,12 +61,12 @@ def parse_domain(file_path):
                     if len(predicate.split(" ")) == 2:
                         name, param = predicate.split(" ?")
                         parsed_param = parse_constant(param, types)
-                        predicates.append(UnaryPredicate(name.strip(), parsed_param.strip()))
+                        predicates.append(UnaryPredicate(name.strip(), parsed_param.strip(), True))
                     elif len(predicate.split(" ")) == 3:
                         name, param1, param2 = predicate.split(" ?")
                         parsed_param1 = parse_constant(param1, types)
                         parsed_param2 = parse_constant(param2, types)
-                        predicates.append(BinaryPredicate(name.strip(), parsed_param1.strip(), parsed_param2.strip()))
+                        predicates.append(BinaryPredicate(name.strip(), parsed_param1.strip(), parsed_param2.strip(), True))
         elif in_predicates:
             # Do if necessary, I think unified-planning does not behave like this
             pass
@@ -88,16 +89,34 @@ def parse_domain(file_path):
                 for precondition in objs:
                     if len(precondition.split(" ")) == 2:
                         name, param = precondition.split(" ?")
-                        action_preconditions.append(UnaryPredicate(name.strip(), param.strip()))
+                        action_preconditions.append(UnaryPredicate(name.strip(), param.strip(), True))
                     elif len(precondition.split(" ")) == 3:
                         name, param1, param2 = precondition.split(" ?")
-                        action_preconditions.append(BinaryPredicate(name.strip(), param1.strip(), param2.strip()))
+                        action_preconditions.append(BinaryPredicate(name.strip(), param1.strip(), param2.strip(), True))
             elif line.startswith(":effect"):
-                effects = line.replace(":effect ()", "").replace("and (","").replace("))", "").strip()
-                objs = effects.split(") (")
+                effects = line.replace(":effect (and (","").strip()
+                objs = effects.split("(when (")
                 for effect in objs:
-                    #TODO los objetos tienen muchas clausulas hay q tener cuidado
-                    pass
+                    if effect.strip() != "":
+                        conditions = []
+                        effects = []
+                        effect_parts = effect.strip().split(") (")
+                        if effect.strip().startswith("and ("):
+                            effect = effect.replace("and (","").strip()
+                        for i in range(len(effect_parts)):
+                            part = effect_parts[i].replace("(","").replace(")","").replace("?","").strip()
+                            positive = True
+                            if part.startswith("not"):
+                                positive = False
+                            if i < len(effect_parts) - 1:
+                                condition_parts = part.split(" ")
+                                if len(condition_parts) == 2:
+                                    conditions.append(UnaryPredicate(condition_parts[0], condition_parts[1], positive))
+                                elif len(condition_parts) == 3:
+                                    conditions.append(BinaryPredicate(part.split(" ")[0], part.split(" ")[1], part.split(" ")[2], positive))
+                            else:
+                                effects.append(UnaryPredicate(part.split(" ")[0], part.split(" ")[1], positive))
+                        action_effects.append(Effect(conditions, effects))
             elif line == ")":
                 actions.append(Action(action_name, action_params, action_preconditions, action_effects))
                 in_action = False
