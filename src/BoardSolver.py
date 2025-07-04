@@ -96,17 +96,19 @@ def parse_domain(file_path):
                     effects = line.replace(":effect (and (","").strip()
                     objs = effects.split("(when (")
                     for effect in objs:
+                        effect = effect.replace("when", "").strip()
                         if effect.strip() != "":
                             conditions = []
                             effects = []
-                            effect_parts = effect.strip().split(") (")
                             if effect.strip().startswith("and ("):
                                 effect = effect.replace("and (","").strip()
+                            effect_parts = effect.strip().split(") (")
                             for i in range(len(effect_parts)):
                                 part = effect_parts[i].replace("(","").replace(")","").replace("?","").strip()
                                 positive = True
                                 if part.startswith("not"):
                                     positive = False
+                                    part = part.replace("not","").strip()
                                 if i < len(effect_parts) - 1:
                                     condition_parts = part.split(" ")
                                     if len(condition_parts) == 2:
