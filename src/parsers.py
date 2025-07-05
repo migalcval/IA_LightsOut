@@ -48,7 +48,7 @@ def parse_domain(file_path):
                     pass
             elif in_constants:
                 if line.strip() != ")":
-                    objs = line.split("-")
+                    objs = line.split(" - ")
                     constant_type = objs[1].strip()
                     if constant_type not in types:
                         raise ValueError(f"Type {constant_type} not in domain ({types})")
@@ -171,7 +171,6 @@ def parse_problem(file_path):
                         goal_conditions.append(BinaryPredicate(obj[0], obj[1], obj[2], True))
 
     return Problem(init_conditions, goal_conditions)
-
 
 
 #--------------------------------------------------------------------------------------------------------#
