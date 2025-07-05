@@ -5,7 +5,7 @@ UnaryPredicate = namedtuple("UnaryPredicate", ["name", "parameter", "positive"])
 BinaryPredicate = namedtuple("BinaryPredicate", ["name", "parameter1", "parameter2", "positive"])
 Action = namedtuple("Action", ["name", "parameters", "preconditions", "effects"])
 Effect = namedtuple("Effect", ["conditions", "effects"])
-Dominio = namedtuple("Dominio", ["types", "constants", "predicates", "actions"])
+Domain = namedtuple("Domain", ["types", "constants", "predicates", "actions"])
 
 def parse_domain(file_path):
     with open(file_path) as file:
@@ -121,7 +121,7 @@ def parse_domain(file_path):
                 elif line == ")":
                     actions.append(Action(action_name, action_params, action_preconditions, action_effects))
                     in_action = False
-    domain = Dominio(types, constants, predicates, actions)
+    domain = Domain(types, constants, predicates, actions)
     return domain
 
 def parse_constant(constant, types):
