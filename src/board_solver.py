@@ -1,4 +1,5 @@
 from parsers import parse_domain, parse_problem, Constant, UnaryPredicate, BinaryPredicate, Action, Domain
+from math import inf as infinity
 
 def solve_board(domain_file, problem_file):
     """
@@ -22,7 +23,6 @@ def get_h_add(domain, problem):
     res = 0
     for cell in domain.constants:
         if cell.type == "cell" and cell.name not in get_init_cells_on(problem.init):
-            print(cell)
             res += 1
     return res
 
