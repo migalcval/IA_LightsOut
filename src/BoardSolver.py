@@ -153,8 +153,7 @@ def parse_problem(file_path):
             if line.startswith("(:init"):
                 facts = line.replace("(:init", "").replace(")", "").strip().split("(")
                 for fact in facts:
-                    fact = fact.strip()
-                    obj = fact.split()
+                    obj = fact.strip().split()
                     if len(obj) == 2:
                         init_conditions.append(UnaryPredicate(obj[0], obj[1], True))
                     elif len(obj) == 3:
