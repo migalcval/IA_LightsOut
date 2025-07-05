@@ -6,6 +6,11 @@ BinaryPredicate = namedtuple("BinaryPredicate", ["name", "parameter1", "paramete
 Action = namedtuple("Action", ["name", "parameters", "preconditions", "effects"])
 Effect = namedtuple("Effect", ["conditions", "effects"])
 Domain = namedtuple("Domain", ["types", "constants", "predicates", "actions"])
+Problem = namedtuple("Problem", ["init", "goal"])
+
+#--------------------------------------------------------------------------------------------------------------#
+#--------------------------------------------- DOMAIN PARSING -------------------------------------------------#
+#--------------------------------------------------------------------------------------------------------------#
 
 def parse_domain(file_path):
     with open(file_path) as file:
@@ -121,8 +126,8 @@ def parse_domain(file_path):
                 elif line == ")":
                     actions.append(Action(action_name, action_params, action_preconditions, action_effects))
                     in_action = False
-    domain = Domain(types, constants, predicates, actions)
-    return domain
+
+    return Domain(types, constants, predicates, actions)
 
 def parse_constant(constant, types):
     parts = constant.replace("(","").replace(")","").split("-")
@@ -131,6 +136,49 @@ def parse_constant(constant, types):
     param = Constant(parts[0].strip(), parts[1].strip())
     return param
 
+#----------------------------------------------------------------------------------------------------------------#
+#------------------------------------------------- PROBLEM PARSING ----------------------------------------------#
+#----------------------------------------------------------------------------------------------------------------#
+
+def parse_problem(file_path):
+    with open(file_path) as file:
+        lines = file.readlines()
+
+    init_conditions = []
+    goal_conditions = []
+
+    for line in lines:
+        line = line.strip()
+        if line != "":
+            if line.startswith("(:init"):
+                facts = line.replace("(:init", "").replace(")", "").strip().split("(")
+                for fact in facts:
+                    fact = fact.strip()
+                    obj = fact.split()
+                    if len(obj) == 2:
+                        init_conditions.append(UnaryPredicate(obj[0], obj[1], True))
+                    elif len(obj) == 3:
+                        init_conditions.append(BinaryPredicate(obj[0], obj[1], obj[2], True))
+
+            elif line.startswith("(:goal"):
+                line = line.replace("(:goal (and", "").replace(")", "").strip()
+                conditions = line.split("(")
+                for cond in conditions:
+                    obj = cond.split()
+                    if len(obj) == 2:
+                        goal_conditions.append(UnaryPredicate(obj[0], obj[1], True))
+                    elif len(obj) == 3:
+                        goal_conditions.append(BinaryPredicate(obj[0], obj[1], obj[2], True))
+
+    return Problem(init_conditions, goal_conditions)
+
+#--------------------------------------------------------------------------------------------------------#
+#------------------------------------------ TEST --------------------------------------------------------#
+#--------------------------------------------------------------------------------------------------------#
+
 if __name__ == "__main__":
+
     dominio = parse_domain("src/pddl/lightsout_domain.pddl")
     print(dominio)
+    problem = parse_problem("src/pddl/lightsout_problem.pddl")
+    print(problem)
