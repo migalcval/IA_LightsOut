@@ -26,11 +26,10 @@ def solve_board(domain_file, problem_file):
     adjacencies = set()
     for predicate in problem.init:
         if isinstance(predicate, BinaryPredicate):
-            adjacencies.add({predicate.parameter1, predicate.parameter2})
+            adjacencies.add(frozenset([predicate.parameter1, predicate.parameter2]))
     # Initialize the A* search algorithm
-    initial_cells_on = get_cells_on(problem.init)
+    initial_cells_on = frozenset(get_cells_on(problem.init))
     res = []
-
     # 1
     g = defaultdict(lambda: infinity)
     g[initial_cells_on] = 0
@@ -41,7 +40,7 @@ def solve_board(domain_file, problem_file):
     # 3
     closed = set()
     # 4
-    open_states = set(initial_cells_on)
+    open_states = {initial_cells_on}
     # 5
     while open_states:
         # 6
@@ -56,7 +55,7 @@ def solve_board(domain_file, problem_file):
         # 10
         for action in actions:
             # 11
-            next_s = apply_action(domain.actions,s, action, adjacencies)
+            next_s = frozenset(apply_action(domain.actions,s, action, adjacencies))
             # 12
             if next_s in open_states and g[s] + 1 < g[next_s]:
                 # 13
@@ -93,7 +92,7 @@ def solve_board(domain_file, problem_file):
 def get_h_add(cells, state):
     res = 0
     for cell in cells:
-        if cell.name not in state:
+        if cell not in state:
             res += 1
     return res
 
@@ -118,7 +117,7 @@ def apply_action(actions, state, action, adjacencies):
     action_effects = get_action_effects(actions, state, action_name, cell, adjacencies)
     new_state = set(state)
     for effect in action_effects:
-        if effect.conditions in new_state:
+        if set(effect.conditions).issubset(new_state):
             for cond in effect.conditions:
                 new_state.remove(cond)
             for eff in effect.effects:
@@ -162,11 +161,5 @@ if __name__ == "__main__":
     problem_file = "src/pddl/lightsout_problem.pddl"
     
     # Solve the board and print the solution
-    # solution = solve_board(domain_file, problem_file)
-    # print(solution)
-    
-    # Example of getting h_add value
-    domain = parse_domain(domain_file)
-    problem = parse_problem(problem_file)
-    h_add_value = get_h_add(domain, problem)
-    print(f"h_add value: {h_add_value}")
+    solution = solve_board(domain_file, problem_file)
+    print(solution)
