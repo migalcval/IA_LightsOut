@@ -56,6 +56,7 @@ def solve_board(domain_file, problem_file):
         for action in actions:
             # 11
             next_s = frozenset(apply_action(domain.actions,s, action, adjacencies))
+            print(f"Next state: {next_s}")
             # 12
             if next_s in open_states and g[s] + 1 < g[next_s]:
                 # 13
@@ -117,11 +118,11 @@ def apply_action(actions, state, action, adjacencies):
     action_effects = get_action_effects(actions, state, action_name, cell, adjacencies)
     new_state = set(state)
     for effect in action_effects:
-        if set(effect.conditions).issubset(new_state):
-            for cond in effect.conditions:
-                new_state.remove(cond)
-            for eff in effect.effects:
-                new_state.add(eff)
+        for eff in effect.effects:
+            if eff.positive:
+                new_state.add(eff.parameter)
+            else:
+                new_state.remove(eff.parameter)
     return new_state
 
 def get_action_effects(actions, state, action_name, cell, adjacencies):
@@ -130,19 +131,33 @@ def get_action_effects(actions, state, action_name, cell, adjacencies):
         if action.name == action_name:
             for effect in action.effects:
                 parsed_conditions = []
+                skip = True
                 conditions = effect.conditions
-                for condition in conditions:
+                if len(conditions) == 1:
+                    condition = conditions[0]
                     if isinstance(condition, UnaryPredicate):
                         if condition.parameter == "c":
                             condition = UnaryPredicate(condition.name, cell, condition.positive)
-                        if condition in state:
-                            parsed_conditions.append(condition)
-                    elif isinstance(condition, BinaryPredicate):
-                        if condition.parameter1 == "c" and {cell, condition.parameter2} in adjacencies:
-                            parsed_conditions.append(BinaryPredicate(condition.name, cell, condition.parameter2, condition.positive))
-                        elif condition.parameter2 == "c" and {cell, condition.parameter1} in adjacencies:
-                            parsed_conditions.append(BinaryPredicate(condition.name, condition.parameter1, cell, condition.positive))
-                if not parsed_conditions:
+                            if condition.parameter in state and condition.positive or condition.parameter not in state and not condition.positive:
+                                parsed_conditions.append(condition)
+                else:
+                    for condition in conditions:
+                        if isinstance(condition, UnaryPredicate):
+                            if condition.parameter == "c":
+                                parsed_conditions.append(UnaryPredicate(condition.name, cell, condition.positive))
+                            if (condition.parameter in state and condition.positive or condition.parameter not in state and not condition.positive) and {cell, condition.parameter} in adjacencies:
+                                parsed_conditions.append(condition)
+                            else:
+                                continue
+                        elif isinstance(condition, BinaryPredicate):
+                            if condition.parameter1 == "c" and {cell, condition.parameter2} in adjacencies:
+                                parsed_conditions.append(BinaryPredicate(condition.name, cell, condition.parameter2, condition.positive))
+                            elif condition.parameter2 == "c" and {cell, condition.parameter1} in adjacencies:
+                                parsed_conditions.append(BinaryPredicate(condition.name, condition.parameter1, cell, condition.positive))
+                for parsed_condition in parsed_conditions:
+                    if isinstance(parsed_condition, UnaryPredicate):
+                        skip = False
+                if skip:
                     continue
                 parsed_effects = []
                 effects = effect.effects
