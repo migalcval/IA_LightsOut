@@ -1,8 +1,7 @@
 from parsers import parse_domain, parse_problem, Constant, UnaryPredicate, BinaryPredicate, Action, Domain, Effect
 from math import inf as infinity
-from collections import defaultdict, namedtuple
-
-Move = namedtuple("Move", ["previous_state", "action", "resulting_state"])
+from collections import defaultdict
+from Node import Node
 
 def solve_board(domain_file, problem_file):
     """
@@ -27,9 +26,10 @@ def solve_board(domain_file, problem_file):
     for predicate in problem.init:
         if isinstance(predicate, BinaryPredicate):
             adjacencies.add(frozenset([predicate.parameter1, predicate.parameter2]))
+    goal_cells = get_cells_on(problem.goal)
     # Initialize the A* search algorithm
     initial_cells_on = frozenset(get_cells_on(problem.init))
-    res = []
+    nodes = set()
     # 1
     g = defaultdict(lambda: infinity)
     g[initial_cells_on] = 0
@@ -41,34 +41,42 @@ def solve_board(domain_file, problem_file):
     closed = set()
     # 4
     open_states = {initial_cells_on}
+    nodes.add(Node(initial_cells_on, None, None))
     # 5
     while open_states:
         # 6
         s = min(open_states, key=lambda x: f[x])
+        print(get_h_add(cells, s))
         open_states.remove(s)
         # 7
         closed.add(s)
         # 8
-        if get_cells_on(problem.goal) in s:
+        if goal_cells in s:
             # 9
-            return res
+            return get_solution_path(s, None, nodes)
         # 10
         for action in actions:
             # 11
             next_s = frozenset(apply_action(domain.actions,s, action, adjacencies))
-            print(f"Next state: {next_s}")
+            node = Node(next_s, s, action)
             # 12
             if next_s in open_states and g[s] + 1 < g[next_s]:
+                # print("1st condition met")
                 # 13
-                res.append(Move(s, action, next_s))
+                if node in nodes:
+                    nodes.remove(node)
+                nodes.add(node)
                 # 14
                 g[next_s] = g[s] + 1
                 # 15
                 f[next_s] = g[next_s] + get_h_add(cells, next_s)
             # 16
             elif next_s in closed and g[s] + 1 < g[next_s]:
+                # print("2nd condition met")
                 # 17
-                res.append(Move(s, action, next_s))
+                if node in nodes:
+                    nodes.remove(node)
+                nodes.add(node)
                 # 18
                 g[next_s] = g[s] + 1
                 # 19
@@ -79,14 +87,19 @@ def solve_board(domain_file, problem_file):
                 open_states.add(next_s)
             # 22
             elif next_s not in open_states and next_s not in closed:
+                # print("3rd condition met")
                 # 23
-                res.append(Move(s, action, next_s))
+                if node in nodes:
+                    nodes.remove(node)
+                nodes.add(node)
                 # 24
                 g[next_s] = g[s] + 1
                 # 25
                 f[next_s] = g[next_s] + get_h_add(cells, next_s)
                 # 26
                 open_states.add(next_s)
+            # else:
+            #     print("No condition met")
     # 27
     return []
     
@@ -169,6 +182,22 @@ def get_action_effects(actions, state, action_name, cell, adjacencies):
                 res.append(Effect(parsed_conditions, parsed_effects))
     return res
 
+def get_solution_path(state, action, nodes):
+    path = []
+    node = get_equal(nodes, state)
+    if node is None:
+        raise ValueError("State not found in nodes")
+    father, father_action = node.father
+    if father is not None:
+        path = get_solution_path(father, father_action, nodes)
+    path.append((state, action))
+    return path
+
+def get_equal(in_set, in_element):
+   for element in in_set:
+       if element == in_element:
+           return element
+   return None
 
 if __name__ == "__main__":
     # Example usage
