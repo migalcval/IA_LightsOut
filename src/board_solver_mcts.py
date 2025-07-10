@@ -124,7 +124,7 @@ def mcts_iteration(domain_file, problem_file, mcts_value=None, extra_selections=
                 open_states.add(next_s)
     # Retropropagation
     if len(path) > 0:
-        value = len(path)
+        value = 26-len(path)
     mcts_value[states_sequence[-1]] = value
     for i in range(len(states_sequence) - 2, -1, -1):
         mcts_value[states_sequence[i]] = mcts_value[states_sequence[i + 1]]/states_sequence.count(states_sequence[i])
